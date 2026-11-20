@@ -1,286 +1,293 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Index</title></head>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lionheart Idle Arena</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0b0d14;
+            --panel-bg: #151926;
+            --panel-border: #262d42;
+            --gold: #f59e0b;
+            --gold-hover: #d97706;
+            --hero-green: #10b981;
+            --enemy-red: #ef4444;
+            --crit-orange: #ff5500;
+            --text-light: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            padding: 12px;
+            gap: 10px;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            padding: 10px 14px;
+            border-radius: 12px;
+        }
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .player-name {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+        .stage-pill {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-block;
+            width: fit-content;
+        }
+        .stage-pill.boss {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            animation: pulseGlow 1.5s infinite;
+        }
+        .gold-box {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--gold);
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        /* Battle Arena */
+        .arena {
+            flex: 1;
+            background: radial-gradient(circle at center, #1e2438 0%, #0f121c 100%);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px 12px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .arena-hint {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: 0.3px;
+        }
+        .fighters-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            margin: auto 0;
+        }
+        .fighter {
+            width: 44%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .sprite-box {
+            width: 82px;
+            height: 82px;
+            border-radius: 18px;
+            background: #1a2033;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            margin-bottom: 8px;
+            position: relative;
+            transition: transform 0.08s ease-out;
+        }
+        .hero-box {
+            border: 2px solid var(--hero-green);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+        .enemy-box {
+            border: 2px solid var(--enemy-red);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+        }
+        .lunge-right { transform: translateX(18px) scale(1.1); }
+        .lunge-left { transform: translateX(-18px) scale(1.1); }
+        .shake { animation: shakeAnim 0.2s ease-in-out; }
+
+        .unit-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+        .hp-track {
+            width: 100%;
+            height: 10px;
+            background: #272e45;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        .hp-fill {
+            height: 100%;
+            transition: width 0.12s linear;
+        }
+        .hp-hero { background: var(--hero-green); }
+        .hp-enemy { background: var(--enemy-red); }
+        .unit-stats {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        /* Floating Damage Numbers */
+        .dmg-popup {
+            position: absolute;
+            font-weight: 900;
+            font-size: 18px;
+            pointer-events: none;
+            animation: floatFade 0.65s ease-out forwards;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        .dmg-crit {
+            font-size: 24px;
+            color: var(--crit-orange) !important;
+        }
+
+        /* Monetization / Booster Button */
+        .boost-btn {
+            background: linear-gradient(90deg, #7c3aed, #db2777);
+            border: none;
+            color: #fff;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3);
+        }
+        .boost-btn:disabled {
+            background: #2d344d;
+            color: #94a3b8;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        /* Upgrade Cards */
+        .upgrades-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .upg-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            padding: 10px 12px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .upg-details h4 {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .upg-details p {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        .buy-btn {
+            background: var(--gold);
+            color: #0b0d14;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 13px;
+            min-width: 88px;
+            cursor: pointer;
+        }
+        .buy-btn:active { transform: scale(0.96); }
+        .buy-btn:disabled {
+            background: #283047;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        @keyframes floatFade {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-45px) scale(1.15); }
+        }
+        @keyframes shakeAnim {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 8px rgba(220, 38, 38, 0.6); }
+            50% { box-shadow: 0 0 18px rgba(220, 38, 38, 1); }
+        }
+    </style>
+</head>
 <body>
-<p>&lt;!DOCTYPE html&gt;<br>
-&lt;html lang=&quot;en&quot; dir=&quot;ltr&quot;&gt;<br>
-&lt;head&gt;<br>
-    &lt;meta charset=&quot;UTF-8&quot;&gt;<br>
-    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no&quot;&gt;<br>
-    &lt;title&gt;Lionheart Idle Arena&lt;/title&gt;<br>
-    &lt;script src=&quot;https://telegram.org/js/telegram-web-app.js&quot;&gt;&lt;/script&gt;<br>
-    &lt;style&gt;<br>
-        :root {<br>
-            --bg-dark: #0b0d14;<br>
-            --panel-bg: #151926;<br>
-            --panel-border: #262d42;<br>
-            --gold: #f59e0b;<br>
-            --gold-hover: #d97706;<br>
-            --hero-green: #10b981;<br>
-            --enemy-red: #ef4444;<br>
-            --crit-orange: #ff5500;<br>
-            --text-light: #f8fafc;<br>
-            --text-dim: #94a3b8;<br>
-        }<br>
-        * {<br>
-            box-sizing: border-box;<br>
-            margin: 0;<br>
-            padding: 0;<br>
-            font-family: &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;<br>
-            user-select: none;<br>
-            -webkit-tap-highlight-color: transparent;<br>
-        }<br>
-        body {<br>
-            background-color: var(--bg-dark);<br>
-            color: var(--text-light);<br>
-            display: flex;<br>
-            flex-direction: column;<br>
-            height: 100vh;<br>
-            overflow: hidden;<br>
-            padding: 12px;<br>
-            gap: 10px;<br>
-        }</p>
-<p>        /* Top Bar */<br>
-        .top-bar {<br>
-            display: flex;<br>
-            justify-content: space-between;<br>
-            align-items: center;<br>
-            background: var(--panel-bg);<br>
-            border: 1px solid var(--panel-border);<br>
-            padding: 10px 14px;<br>
-            border-radius: 12px;<br>
-        }<br>
-        .player-info {<br>
-            display: flex;<br>
-            flex-direction: column;<br>
-            gap: 2px;<br>
-        }<br>
-        .player-name {<br>
-            font-size: 12px;<br>
-            color: var(--text-dim);<br>
-            font-weight: 600;<br>
-        }<br>
-        .stage-pill {<br>
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);<br>
-            padding: 3px 10px;<br>
-            border-radius: 6px;<br>
-            font-size: 13px;<br>
-            font-weight: 700;<br>
-            display: inline-block;<br>
-            width: fit-content;<br>
-        }<br>
-        .stage-pill.boss {<br>
-            background: linear-gradient(135deg, #dc2626, #991b1b);<br>
-            animation: pulseGlow 1.5s infinite;<br>
-        }<br>
-        .gold-box {<br>
-            background: rgba(245, 158, 11, 0.12);<br>
-            border: 1px solid rgba(245, 158, 11, 0.3);<br>
-            color: var(--gold);<br>
-            padding: 6px 12px;<br>
-            border-radius: 10px;<br>
-            font-weight: 800;<br>
-            font-size: 16px;<br>
-        }</p>
-<p>        /* Battle Arena */<br>
-        .arena {<br>
-            flex: 1;<br>
-            background: radial-gradient(circle at center, #1e2438 0%, #0f121c 100%);<br>
-            border: 1px solid var(--panel-border);<br>
-            border-radius: 16px;<br>
-            position: relative;<br>
-            display: flex;<br>
-            flex-direction: column;<br>
-            justify-content: space-between;<br>
-            padding: 16px 12px;<br>
-            cursor: pointer;<br>
-            overflow: hidden;<br>
-        }<br>
-        .arena-hint {<br>
-            text-align: center;<br>
-            font-size: 11px;<br>
-            color: var(--text-dim);<br>
-            letter-spacing: 0.3px;<br>
-        }<br>
-        .fighters-row {<br>
-            display: flex;<br>
-            justify-content: space-around;<br>
-            align-items: center;<br>
-            width: 100%;<br>
-            margin: auto 0;<br>
-        }<br>
-        .fighter {<br>
-            width: 44%;<br>
-            display: flex;<br>
-            flex-direction: column;<br>
-            align-items: center;<br>
-            text-align: center;<br>
-        }<br>
-        .sprite-box {<br>
-            width: 82px;<br>
-            height: 82px;<br>
-            border-radius: 18px;<br>
-            background: #1a2033;<br>
-            display: flex;<br>
-            align-items: center;<br>
-            justify-content: center;<br>
-            font-size: 42px;<br>
-            margin-bottom: 8px;<br>
-            position: relative;<br>
-            transition: transform 0.08s ease-out;<br>
-        }<br>
-        .hero-box {<br>
-            border: 2px solid var(--hero-green);<br>
-            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);<br>
-        }<br>
-        .enemy-box {<br>
-            border: 2px solid var(--enemy-red);<br>
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);<br>
-        }<br>
-        .lunge-right { transform: translateX(18px) scale(1.1); }<br>
-        .lunge-left { transform: translateX(-18px) scale(1.1); }<br>
-        .shake { animation: shakeAnim 0.2s ease-in-out; }</p>
-<p>        .unit-title {<br>
-            font-size: 14px;<br>
-            font-weight: 700;<br>
-            margin-bottom: 4px;<br>
-            white-space: nowrap;<br>
-        }<br>
-        .hp-track {<br>
-            width: 100%;<br>
-            height: 10px;<br>
-            background: #272e45;<br>
-            border-radius: 5px;<br>
-            overflow: hidden;<br>
-            margin-bottom: 4px;<br>
-        }<br>
-        .hp-fill {<br>
-            height: 100%;<br>
-            transition: width 0.12s linear;<br>
-        }<br>
-        .hp-hero { background: var(--hero-green); }<br>
-        .hp-enemy { background: var(--enemy-red); }<br>
-        .unit-stats {<br>
-            font-size: 11px;<br>
-            color: var(--text-dim);<br>
-        }</p>
-<p>        /* Floating Damage Numbers */<br>
-        .dmg-popup {<br>
-            position: absolute;<br>
-            font-weight: 900;<br>
-            font-size: 18px;<br>
-            pointer-events: none;<br>
-            animation: floatFade 0.65s ease-out forwards;<br>
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);<br>
-            z-index: 10;<br>
-        }<br>
-        .dmg-crit {<br>
-            font-size: 24px;<br>
-            color: var(--crit-orange) !important;<br>
-        }</p>
-<p>        /* Monetization / Booster Button */<br>
-        .boost-btn {<br>
-            background: linear-gradient(90deg, #7c3aed, #db2777);<br>
-            border: none;<br>
-            color: #fff;<br>
-            padding: 12px;<br>
-            border-radius: 12px;<br>
-            font-weight: 700;<br>
-            font-size: 14px;<br>
-            cursor: pointer;<br>
-            display: flex;<br>
-            align-items: center;<br>
-            justify-content: center;<br>
-            gap: 8px;<br>
-            box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3);<br>
-        }<br>
-        .boost-btn:disabled {<br>
-            background: #2d344d;<br>
-            color: #94a3b8;<br>
-            box-shadow: none;<br>
-            cursor: default;<br>
-        }</p>
-<p>        /* Upgrade Cards */<br>
-        .upgrades-list {<br>
-            display: flex;<br>
-            flex-direction: column;<br>
-            gap: 8px;<br>
-        }<br>
-        .upg-card {<br>
-            background: var(--panel-bg);<br>
-            border: 1px solid var(--panel-border);<br>
-            padding: 10px 12px;<br>
-            border-radius: 12px;<br>
-            display: flex;<br>
-            justify-content: space-between;<br>
-            align-items: center;<br>
-        }<br>
-        .upg-details h4 {<br>
-            font-size: 13px;<br>
-            font-weight: 700;<br>
-            margin-bottom: 2px;<br>
-        }<br>
-        .upg-details p {<br>
-            font-size: 11px;<br>
-            color: var(--text-dim);<br>
-        }<br>
-        .buy-btn {<br>
-            background: var(--gold);<br>
-            color: #0b0d14;<br>
-            border: none;<br>
-            padding: 8px 14px;<br>
-            border-radius: 8px;<br>
-            font-weight: 800;<br>
-            font-size: 13px;<br>
-            min-width: 88px;<br>
-            cursor: pointer;<br>
-        }<br>
-        .buy-btn:active { transform: scale(0.96); }<br>
-        .buy-btn:disabled {<br>
-            background: #283047;<br>
-            color: #64748b;<br>
-            cursor: not-allowed;<br>
-        }</p>
-<p>        @keyframes floatFade {<br>
-            0% { opacity: 1; transform: translateY(0) scale(1); }<br>
-            100% { opacity: 0; transform: translateY(-45px) scale(1.15); }<br>
-        }<br>
-        @keyframes shakeAnim {<br>
-            0%, 100% { transform: translateX(0); }<br>
-            25% { transform: translateX(-5px); }<br>
-            75% { transform: translateX(5px); }<br>
-        }<br>
-        @keyframes pulseGlow {<br>
-            0%, 100% { box-shadow: 0 0 8px rgba(220, 38, 38, 0.6); }<br>
-            50% { box-shadow: 0 0 18px rgba(220, 38, 38, 1); }<br>
-        }<br>
-    &lt;/style&gt;<br>
-&lt;/head&gt;<br>
-&lt;body&gt;</p>
-<p>    &lt;div class=&quot;top-bar&quot;&gt;<br>
-        &lt;div class=&quot;player-info&quot;&gt;<br>
-            &lt;span class=&quot;player-name&quot; id=&quot;tg-username&quot;&gt;Commander&lt;/span&gt;<br>
-            &lt;span class=&quot;stage-pill&quot; id=&quot;stage-badge&quot;&gt;Stage 1&lt;/span&gt;<br>
-        &lt;/div&gt;<br>
-        &lt;div class=&quot;gold-box&quot;&gt;💰 &lt;span id=&quot;gold-count&quot;&gt;0&lt;/span&gt;&lt;/div&gt;<br>
-    &lt;/div&gt;</p>
-<p>    &lt;div class=&quot;arena&quot; id=&quot;battle-arena&quot;&gt;<br>
-        &lt;div class=&quot;arena-hint&quot;&gt;⚔️ Auto-Battle Active • Tap Arena to Strike&lt;/div&gt;<br>
-        <br>
-        &lt;div class=&quot;fighters-row&quot;&gt;<br>
-            &lt;!-- Hero --&gt;<br>
-            &lt;div class=&quot;fighter&quot;&gt;<br>
-                &lt;div class=&quot;sprite-box hero-box&quot; id=&quot;hero-sprite&quot;&gt;🦁&lt;/div&gt;<br>
-                &lt;div class=&quot;unit-title&quot;&gt;Lionheart&lt;/div&gt;<br>
-                &lt;div class=&quot;hp-track&quot;&gt;&lt;div class=&quot;hp-fill hp-hero&quot; id=&quot;hero-hp-bar&quot;&gt;&lt;/div&gt;&lt;/div&gt;<br>
-                &lt;div class=&quot;unit-stats&quot;&gt;HP: &lt;span id=&quot;hero-hp-val&quot;&gt;100/100&lt;/span&gt; • ATK: &lt;span id=&quot;hero-atk-val&quot;&gt;12&lt;/span&gt;&lt;/div&gt;<br>
-            &lt;/div&gt;</p>
-<p>            &lt;!-- Enemy --&gt;<br>
-            &lt;div class=&quot;fighter&quot;&gt;<br>
-                &lt;div class=&quot;sprite-box enemy-box&quot; id=&quot;enemy-sprite&quot;&gt;👹&lt;/div&gt;<br>
-                &lt;div class=&quot;unit-title&quot; id=&quot;enemy-title&quot;&gt;Goblin Lv.1&lt;/div&gt;<br>
-                &lt;div class=&quot;hp-track&quot;&gt;&lt;div class=&quot;hp-fill hp-enemy&quot; id=&quot;enemy-hp-bar&quot;&gt;&lt;/div&gt;&lt;/div&gt;<br>
-                &lt;div class=&quot;unit-stats&quot;&gt;HP: &lt;span id=&quot;enemy-hp-val&quot;&gt;50/50&lt;/span&gt; • ATK: &lt;span id=&quot;enemy-atk-val&quot;&gt;4&lt;/span&gt;&lt;/div&gt;<br>
-            &lt;/div&gt;<br>
-        &lt;/div&gt;</p>
-<p>        &lt;div class=&quot;arena-hint&quot; id=&quot;combat-log&quot;&gt;Defeat enemies</p>
-</body></html>
+
+    <div class="top-bar">
+        <div class="player-info">
+            <span class="player-name" id="tg-username">Commander</span>
+            <span class="stage-pill" id="stage-badge">Stage 1</span>
+        </div>
+        <div class="gold-box">💰 <span id="gold-count">0</span></div>
+    </div>
+
+    <div class="arena" id="battle-arena">
+        <div class="arena-hint">⚔️ Auto-Battle Active • Tap Arena to Strike</div>
+        
+        <div class="fighters-row">
+            <!-- Hero -->
+            <div class="fighter">
+                <div class="sprite-box hero-box" id="hero-sprite">🦁</div>
+                <div class="unit-title">Lionheart</div>
+                <div class="hp-track"><div class="hp-fill hp-hero" id="hero-hp-bar"></div></div>
+                <div class="unit-stats">HP: <span id="hero-hp-val">100/100</span> • ATK: <span id="hero-atk-val">12</span></div>
+            </div>
+
+            <!-- Enemy -->
+            <div class="fighter">
+                <div class="sprite-box enemy-box" id="enemy-sprite">👹</div>
+                <div class="unit-title" id="enemy-title">Goblin Lv.1</div>
+                <div class="hp-track"><div class="hp-fill hp-enemy" id="enemy-hp-bar"></div></div>
+                <div class="unit-stats">HP: <span id="enemy-hp-val">50/50</span> • ATK: <span id="enemy-atk-val">4</span></div>
+            </div>
+        </div>
+
+        <div class="arena-hint" id="combat-log">Defeat enemies
